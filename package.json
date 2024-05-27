@@ -1,0 +1,108 @@
+{
+  "name": "cleantex",
+  "displayName": "CleanTeX",
+  "description": "Removes revision commands from LaTeX files",
+  "publisher": "aldadic",
+  "version": "1.1.1",
+  "engines": {
+    "vscode": "^1.86.0"
+  },
+  "categories": [
+    "Formatters"
+  ],
+  "icon": "icon.png",
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cleantex.cleanSelection",
+        "category": "CleanTeX",
+        "title": "Clean current selection"
+      },
+      {
+        "command": "cleantex.wrapSelection",
+        "category": "CleanTeX",
+        "title": "Wrap current selection"
+      },
+      {
+        "command": "cleantex.cleanFiles",
+        "category": "CleanTeX",
+        "title": "Clean selected files"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorLangId == latex && editorHasSelection",
+          "submenu": "cleantex/editor",
+          "group": "1_modification"
+        }
+      ],
+      "cleantex/editor": [
+        {
+          "command": "cleantex.wrapSelection"
+        },
+        {
+          "command": "cleantex.cleanSelection"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceLangId == latex",
+          "submenu": "cleantex/explorer",
+          "group": "1_modification"
+        }
+      ],
+      "cleantex/explorer": [
+        {
+          "command": "cleantex.cleanFiles"
+        }
+      ]
+    },
+    "submenus": [
+      {
+        "id": "cleantex/editor",
+        "label": "CleanTeX"
+      },
+      {
+        "id": "cleantex/explorer",
+        "label": "CleanTeX"
+      }
+    ],
+    "configuration": {
+      "title": "CleanTeX",
+      "properties": {
+        "cleantex.command": {
+          "type": "string",
+          "default": "revision",
+          "description": "The command to remove"
+        },
+        "cleantex.makeBackup": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to create a backup before cleaning a file (named <filename>.old.<extension>)"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.86.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^7.0.2",
+    "@typescript-eslint/parser": "^7.0.2",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3",
+    "@vscode/test-cli": "^0.0.6",
+    "@vscode/test-electron": "^2.3.9"
+  }
+}
