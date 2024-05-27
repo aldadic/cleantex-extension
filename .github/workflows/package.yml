@@ -11,7 +11,7 @@ jobs:
       - run: npm install
       - uses: lannonbr/vsce-action@3.0.0
         with:
-          args: "package --allow-missing-repository"
+          args: "package"
       - uses: actions/upload-artifact@v4
         with:
           name: extension

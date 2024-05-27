@@ -3,6 +3,10 @@
   "displayName": "CleanTeX",
   "description": "Removes revision commands from LaTeX files",
   "publisher": "aldadic",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/aldadic/cleantex-extension"
+  },
   "version": "1.1.1",
   "engines": {
     "vscode": "^1.86.0"
