@@ -1,7 +1,7 @@
 // Function that removes the command and its arguments from the input string
 // and returns the cleaned string and the number of commands found.
 
-export function cleanString(input: string, command: string): [string, number] {
+export function cleanString(input: string, command: string, remove: boolean = false): [string, number] {
 	let counter = 0;	// Counter for the number of commands found
 
 	function clean(text: string) {
@@ -21,7 +21,9 @@ export function cleanString(input: string, command: string): [string, number] {
 			} else if (text[i] === '}' && record) {
 				if (openBraces === 1) {
 					record = false;
-					cleaned += temp;
+					if (!remove) {
+						cleaned += temp;
+					}
 					temp = '';
 					counter++;
 				} else {

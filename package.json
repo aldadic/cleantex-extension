@@ -82,6 +82,15 @@
           "default": "revision",
           "description": "The command to remove"
         },
+        "cleantex.mode": {
+          "type": "string",
+          "default": "unwrap",
+          "enum": [
+            "unwrap",
+            "remove"
+          ],
+          "description": "If 'unwrap', the command is removed but its content is kept. If 'remove', the command and its content are removed."
+        },
         "cleantex.makeBackup": {
           "type": "boolean",
           "default": false,

@@ -16,6 +16,9 @@ export function activate(context: vscode.ExtensionContext) {
 		const commandName = vscode.workspace.getConfiguration('cleantex').get('command');
 		const command = `\\${commandName}{`;
 
+		// get mode from configuration
+		const mode = vscode.workspace.getConfiguration('cleantex').get('mode');
+
 		// get makeBackup setting from configuration
 		const makeBackup = vscode.workspace.getConfiguration('cleantex').get('makeBackup');
 
@@ -33,7 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			// clean the document
 			let input = document.getText();
-			let [output, counter] = cleanString(input, command);
+			let [output, counter] = cleanString(input, command, mode === 'remove');
 			await vscode.workspace.fs.writeFile(uri, Buffer.from(output));
 			return counter;
 		});
@@ -44,7 +47,8 @@ export function activate(context: vscode.ExtensionContext) {
 		let total = counters.reduce((acc, val) => acc + val, 0);
 		let commandNameText = total === 1 ? commandName : commandName + 's';
 		let filesText = nonZero.length === 1 ? 'file' : 'files';
-		let message = total === 0 ? `No ${commandName}s found.` : `Removed ${total} ${commandNameText} in ${nonZero.length} ${filesText}.`;
+		let modeText = mode === 'remove' ? 'Removed' : 'Unwrapped';
+		let message = total === 0 ? `No ${commandName}s found.` : `${modeText} ${total} ${commandNameText} in ${nonZero.length} ${filesText}.`;
 		vscode.window.showInformationMessage(message);
 	});
 
@@ -63,9 +67,12 @@ export function activate(context: vscode.ExtensionContext) {
 				// get command name from configuration
 				const commandName = vscode.workspace.getConfiguration('cleantex').get('command');
 				const command = `\\${commandName}{`;
+
+				// get mode from configuration
+				const mode = vscode.workspace.getConfiguration('cleantex').get('mode');
 		
 				// clean the text
-				let [output, counter] = cleanString(input, command);
+				let [output, counter] = cleanString(input, command, mode === 'remove');
 		
 				// replace the text in the editor
 				editor.edit(editBuilder => {
@@ -74,7 +81,8 @@ export function activate(context: vscode.ExtensionContext) {
 		
 				// show a message to the user
 				let commandNameText = counter === 1 ? commandName : commandName + 's';
-				let message = counter === 0 ? `No ${commandName}s found.` : `Removed ${counter} ${commandNameText}.`;
+				let modeText = mode === 'remove' ? 'Removed' : 'Unwrapped';
+				let message = counter === 0 ? `No ${commandName}s found.` : `${modeText} ${counter} ${commandNameText}.`;
 				vscode.window.showInformationMessage(message);
 			}
 		}

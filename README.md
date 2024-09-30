@@ -41,6 +41,7 @@ You can also bind the commands to keyboard shortcuts to make them easier to use.
 This extension contributes the following settings:
 
 * `cleantex.command`: The LaTeX command to remove from the file or selection of text. Default is `revision`.
+* `cleantex.mode`: If set to `unwrap` (default) the command is removed but its content is kept. If set to `remove` the command and its content are removed.
 * `cleantex.makeBackup`: Whether to create a backup before cleaning a file (named `<filename>.old.<extension>`). Default is `false`.
 
 ## Credits
