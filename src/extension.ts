@@ -113,10 +113,59 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 
+	// Register the command to toggle cleaning and unwrapping based on if the selection contains the command or not
+	let toggleSelection = vscode.commands.registerCommand('cleantex.toggleSelection', () => {
+		let editor = vscode.window.activeTextEditor;
+		if (editor) {
+			if (editor.selection.isEmpty) {
+				vscode.window.showErrorMessage('No text selected.');
+				return;
+			}
+			else {
+				let selection = editor.selection;
+				let input = editor.document.getText(selection);
+		
+				// get command name from configuration
+				const commandName = vscode.workspace.getConfiguration('cleantex').get('command');
+				const command = `\\${commandName}{`;
+
+				// get mode from configuration
+				const mode = vscode.workspace.getConfiguration('cleantex').get('mode');
+		
+				// clean the text
+				let [output, counter] = cleanString(input, command, mode === 'remove');
+
+				// if no commands were found, wrap the selection
+				if (counter === 0) {
+					editor.edit(editBuilder => {
+						editBuilder.replace(selection, `\\${commandName}{${input}}`);
+					});
+				}
+				// if commands were found, remove them
+				else {
+					// replace the text in the editor
+					editor.edit(editBuilder => {
+						editBuilder.replace(selection, output);
+					});
+			
+					// show a message to the user
+					let commandNameText = counter === 1 ? commandName : commandName + 's';
+					let modeText = mode === 'remove' ? 'Removed' : 'Unwrapped';
+					let message = counter === 0 ? `No ${commandName}s found.` : `${modeText} ${counter} ${commandNameText}.`;
+					vscode.window.showInformationMessage(message);
+				}
+			}
+		}
+		else {
+			vscode.window.showErrorMessage('No active editor found.');
+		}
+	});
+
 	// Add the commands to the context
 	context.subscriptions.push(cleanFiles);
 	context.subscriptions.push(cleanSelection);
 	context.subscriptions.push(wrapSelection);
+	context.subscriptions.push(toggleSelection);
 }
 
 // This method is called when the extension is deactivated

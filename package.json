@@ -30,6 +30,11 @@
         "title": "Wrap current selection"
       },
       {
+        "command": "cleantex.toggleSelection",
+        "category": "CleanTeX",
+        "title": "Toggle current selection"
+      },
+      {
         "command": "cleantex.cleanFiles",
         "category": "CleanTeX",
         "title": "Clean selected files"
@@ -49,6 +54,9 @@
         },
         {
           "command": "cleantex.cleanSelection"
+        },
+        {
+          "command": "cleantex.toggleSelection"
         }
       ],
       "explorer/context": [

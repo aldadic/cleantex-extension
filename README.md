@@ -19,6 +19,7 @@ Open the extension sidebar in Visual Studio Code and click on the three dots in 
 1. Open a LaTeX file in the editor and make a selection.
 2. Right-click and hover over the `CleanTeX` submenu in the context menu.
 3. Click on `Clean current selection` to remove the command from the selected text. You can also wrap the selected text in the LaTeX command by clicking on `Wrap current selection`.
+The command `Toggle current selection` will remove the command if it is present in the selection and wrap the selection if it is not.
 
 ### Usage in the file explorer
 
@@ -33,6 +34,7 @@ Alternatively, you can use the command palette to search for the commands:
 * `CleanTeX: Clean selected files`
 * `CleanTeX: Clean current selection`
 * `CleanTeX: Wrap current selection`
+* `CleanTeX: Toggle current selection`
 
 You can also bind the commands to keyboard shortcuts to make them easier to use. Just open the keyboard shortcuts settings in Visual Studio Code and search for the commands above.
 
