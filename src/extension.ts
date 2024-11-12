@@ -212,6 +212,9 @@ export function activate(context: vscode.ExtensionContext) {
 					let match = matchesArray[i];
 					let start = match.index;
 					let text = macroDefinition;
+					if (start === undefined) {
+						continue;
+					}
 					let j = start + match[0].length;
 					if (macroArguments > 0) {
 						let currentArgument = 0;
@@ -309,6 +312,9 @@ export function activate(context: vscode.ExtensionContext) {
 						let match = matchesArray[i];
 						let start = match.index;
 						let text = macroDefinition;
+						if (start === undefined) {
+							continue;
+						}
 						let j = start + match[0].length;
 						if (macroArguments > 0) {
 							let currentArgument = 0;
