@@ -2,6 +2,11 @@
 
 All notable changes to the "CleanTeX" extension will be documented in this file.
 
+## [1.3.0] - 2024-11-12
+
+- Added option to replace macros with their definitions.
+- Fixed filenames of backed up files (with `makeBackup` option enabled).
+
 ## [1.2.0] - 2024-09-30
 
 - Added option to remove the command and its content from the file or selection of text.
