@@ -42,7 +42,7 @@
       {
         "command": "cleantex.replaceMacrosInSelection",
         "category": "CleanTeX",
-        "title": "Replace macros in current selection"
+        "title": "Replace macros in selection"
       },
       {
         "command": "cleantex.replaceMacrosInFiles",
