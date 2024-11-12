@@ -38,14 +38,18 @@ suite('Extension Test Suite', () => {
 	// Test the scanMacros function
 	test('scanMacros', () => {
 		let input = `
-			\\newcommand{\\revision}[1]{#1}
+			\\newcommand{\\revision}[1]{{\\color{red}#1}}
 			\\newcommand{\\test}{test}
 			\\newcommand{\\test2}{\\command{test}}
 		`;
 		let macros = scanMacros(input);
-		assert.strictEqual(Object.keys(macros).length, 2);
-		assert.strictEqual(macros['\\test'], 'test');
-		assert.strictEqual(macros['\\test2'], '\\command{test}');
+		assert.strictEqual(Object.keys(macros).length, 3);
+		assert.strictEqual(macros['\\test'][0], 'test');
+		assert.strictEqual(macros['\\test2'][0], '\\command{test}');
+		assert.strictEqual(macros['\\revision'][0], '{\\color{red}#1}');
+		assert.strictEqual(macros['\\test'][1], 0);
+		assert.strictEqual(macros['\\test2'][1], 0);
+		assert.strictEqual(macros['\\revision'][1], 1);
 	});
 
 });

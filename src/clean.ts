@@ -1,6 +1,8 @@
 // Function that removes the command and its arguments from the input string
 // and returns the cleaned string and the number of commands found.
 
+import { parse } from "path";
+
 export function cleanString(input: string, command: string, remove: boolean = false): [string, number] {
 	let counter = 0;	// Counter for the number of commands found
 
@@ -54,8 +56,8 @@ export function cleanString(input: string, command: string, remove: boolean = fa
 // Function that scans the input string for macros and returns an object with the
 // macro names and their definitions.
 
-export function scanMacros(input: string): { [key: string]: string } {
-	const macros: { [key: string]: string } = {};
+export function scanMacros(input: string): { [key: string]: [string, number] } {
+	const macros: { [key: string]: [string, number] } = {};
 	const command = '\\newcommand{';
 	const commandLength = command.length;
 
@@ -63,27 +65,36 @@ export function scanMacros(input: string): { [key: string]: string } {
 		if (input.substring(i, i + commandLength) === command) {
 			let j = i + commandLength;
 			let macroName = '';
+			let macroArguments = 0;
 			while (input[j] !== '}') {
 				macroName += input[j];
 				j++;
 			}
 			j++;
-			if (input[j] !== '{') {
-				continue;
+			if (input[j] === '[') {
+				let macroArgumentsString = '';
+				j++;
+				while (input[j] !== ']') {
+					macroArgumentsString += input[j];
+					j++;
+				}
+				macroArguments = parseInt(macroArgumentsString);
+				j++;
 			}
 			j++;
 			let openBraces = 1;
 			let macroDefinition = '';
 			while (openBraces > 0) {
-				macroDefinition += input[j];
-				j++;
 				if (input[j] === '{') {
 					openBraces++;
 				} else if (input[j] === '}') {
 					openBraces--;
 				}
+				macroDefinition += input[j];
+				j++;
 			}
-			macros[macroName] = macroDefinition;
+			macroDefinition = macroDefinition.substring(0, macroDefinition.length - 1);
+			macros[macroName] = [macroDefinition, macroArguments];
 		}
 	}
 

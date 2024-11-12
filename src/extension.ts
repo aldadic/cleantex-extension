@@ -171,7 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		// get the macros from the file using the scanMacros function
-		const macros: { [key: string]: string } = {};
+		const macros: { [key: string]: [string, number] } = {};
 		macroPaths.forEach(async (path) => {
 			let uri = vscode.Uri.file(path);
 			try {
@@ -202,10 +202,58 @@ export function activate(context: vscode.ExtensionContext) {
 			let output = document.getText();
 			let counter = 0;
 			for (let [key, value] of Object.entries(macros)) {
+				let macroDefinition = value[0];
+				let macroArguments = value[1];
 				let regex = new RegExp(`(?<!\\\\newcommand{)\\${key}`, 'g');
-				console.log(regex);
-				counter += (output.match(regex) || []).length;
-				output = output.replace(regex, value);
+				let matches = output.matchAll(regex);
+				// replace in reverse order to avoid changing the indices of the matches
+				let matchesArray = Array.from(matches);
+				for (let i = matchesArray.length - 1; i >= 0; i--) {
+					let match = matchesArray[i];
+					let start = match.index;
+					let text = macroDefinition;
+					let j = start + match[0].length;
+					if (macroArguments > 0) {
+						let currentArgument = 0;
+						let currentArgumentString = '';
+						let argumentArray = [];
+						while (output[j] !== '{') {
+							j++;
+						}
+						j++;
+						let openBraces = 1;
+						while (j < output.length) {
+							if (output[j] === '{') {
+								openBraces++;
+							} else if (output[j] === '}') {
+								openBraces--;
+							}
+							if (openBraces === 0 && output[j] === '}') {
+								currentArgument++;
+								argumentArray.push(currentArgumentString);
+								if (currentArgument === macroArguments) {
+									j++;
+									break;
+								}
+								else {
+									currentArgumentString = '';
+									while (output[j] !== '{') {
+										j++;
+									}
+									openBraces = 1;
+									j++;
+								}
+							}
+							currentArgumentString += output[j];
+							j++;
+						}
+						for (let i = 0; i < argumentArray.length; i++) {
+							text = text.replace(`#${i + 1}`, argumentArray[i]);
+						}
+					}
+					output = output.substring(0, start) + text + output.substring(j);
+				}
+				counter += matchesArray.length;
 			}
 			await vscode.workspace.fs.writeFile(uri, Buffer.from(output));
 			return counter;
@@ -239,7 +287,7 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 
 				// get the macros from the file using the scanMacros function
-				const macros: { [key: string]: string } = {};
+				const macros: { [key: string]: [string, number] } = {};
 				for (let path of macroPaths) {
 					let uri = vscode.Uri.file(path);
 					let document = await vscode.workspace.openTextDocument(uri);
@@ -251,9 +299,58 @@ export function activate(context: vscode.ExtensionContext) {
 				let output = editor.document.getText(selection);
 				let counter = 0;
 				for (let [key, value] of Object.entries(macros)) {
+					let macroDefinition = value[0];
+					let macroArguments = value[1];
 					let regex = new RegExp(`(?<!\\\\newcommand{)\\${key}`, 'g');
-					counter += (output.match(regex) || []).length;
-					output = output.replace(regex, value);
+					let matches = output.matchAll(regex);
+					// replace in reverse order to avoid changing the indices of the matches
+					let matchesArray = Array.from(matches);
+					for (let i = matchesArray.length - 1; i >= 0; i--) {
+						let match = matchesArray[i];
+						let start = match.index;
+						let text = macroDefinition;
+						let j = start + match[0].length;
+						if (macroArguments > 0) {
+							let currentArgument = 0;
+							let currentArgumentString = '';
+							let argumentArray = [];
+							while (output[j] !== '{') {
+								j++;
+							}
+							j++;
+							let openBraces = 1;
+							while (j < output.length) {
+								if (output[j] === '{') {
+									openBraces++;
+								} else if (output[j] === '}') {
+									openBraces--;
+								}
+								if (openBraces === 0 && output[j] === '}') {
+									currentArgument++;
+									argumentArray.push(currentArgumentString);
+									if (currentArgument === macroArguments) {
+										j++;
+										break;
+									}
+									else {
+										currentArgumentString = '';
+										while (output[j] !== '{') {
+											j++;
+										}
+										openBraces = 1;
+										j++;
+									}
+								}
+								currentArgumentString += output[j];
+								j++;
+							}
+							for (let i = 0; i < argumentArray.length; i++) {
+								text = text.replace(`#${i + 1}`, argumentArray[i]);
+							}
+						}
+						output = output.substring(0, start) + text + output.substring(j);
+					}
+					counter += matchesArray.length;
 				}
 		
 				// replace the text in the editor

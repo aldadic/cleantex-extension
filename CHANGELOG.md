@@ -2,6 +2,10 @@
 
 All notable changes to the "CleanTeX" extension will be documented in this file.
 
+## [1.3.1] - 2024-11-12
+
+- Added support for macros with arguments.
+
 ## [1.3.0] - 2024-11-12
 
 - Added option to replace macros with their definitions.
