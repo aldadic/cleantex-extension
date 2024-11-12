@@ -50,3 +50,42 @@ export function cleanString(input: string, command: string, remove: boolean = fa
 
 	return [output, counter];
 }
+
+// Function that scans the input string for macros and returns an object with the
+// macro names and their definitions.
+
+export function scanMacros(input: string): { [key: string]: string } {
+	const macros: { [key: string]: string } = {};
+	const command = '\\newcommand{';
+	const commandLength = command.length;
+
+	for (let i = 0; i < input.length; i++) {
+		if (input.substring(i, i + commandLength) === command) {
+			let j = i + commandLength;
+			let macroName = '';
+			while (input[j] !== '}') {
+				macroName += input[j];
+				j++;
+			}
+			j++;
+			if (input[j] !== '{') {
+				continue;
+			}
+			j++;
+			let openBraces = 1;
+			let macroDefinition = '';
+			while (openBraces > 0) {
+				macroDefinition += input[j];
+				j++;
+				if (input[j] === '{') {
+					openBraces++;
+				} else if (input[j] === '}') {
+					openBraces--;
+				}
+			}
+			macros[macroName] = macroDefinition;
+		}
+	}
+
+	return macros;
+}

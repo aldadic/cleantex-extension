@@ -3,7 +3,7 @@ import * as assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import { cleanString } from '../clean';
+import { cleanString, scanMacros } from '../clean';
 
 suite('Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
@@ -33,6 +33,19 @@ suite('Extension Test Suite', () => {
 		let [output, counter] = cleanString(input, command);
 		assert.strictEqual(output, 'This is a test with nested revisions.');
 		assert.strictEqual(counter, 2);
+	});
+
+	// Test the scanMacros function
+	test('scanMacros', () => {
+		let input = `
+			\\newcommand{\\revision}[1]{#1}
+			\\newcommand{\\test}{test}
+			\\newcommand{\\test2}{\\command{test}}
+		`;
+		let macros = scanMacros(input);
+		assert.strictEqual(Object.keys(macros).length, 2);
+		assert.strictEqual(macros['\\test'], 'test');
+		assert.strictEqual(macros['\\test2'], '\\command{test}');
 	});
 
 });

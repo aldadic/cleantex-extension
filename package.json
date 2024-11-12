@@ -38,6 +38,16 @@
         "command": "cleantex.cleanFiles",
         "category": "CleanTeX",
         "title": "Clean selected files"
+      },
+      {
+        "command": "cleantex.replaceMacrosInSelection",
+        "category": "CleanTeX",
+        "title": "Replace macros in current selection"
+      },
+      {
+        "command": "cleantex.replaceMacrosInFiles",
+        "category": "CleanTeX",
+        "title": "Replace macros in selected files"
       }
     ],
     "menus": {
@@ -57,6 +67,9 @@
         },
         {
           "command": "cleantex.toggleSelection"
+        },
+        {
+          "command": "cleantex.replaceMacrosInSelection"
         }
       ],
       "explorer/context": [
@@ -69,6 +82,9 @@
       "cleantex/explorer": [
         {
           "command": "cleantex.cleanFiles"
+        },
+        {
+          "command": "cleantex.replaceMacrosInFiles"
         }
       ]
     },
@@ -103,6 +119,14 @@
           "type": "boolean",
           "default": false,
           "description": "Whether to create a backup before cleaning a file (named <filename>.old.<extension>)"
+        },
+        "cleantex.macroPaths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "Absolute (!) paths to macro files to use for replacing macros"
         }
       }
     }
