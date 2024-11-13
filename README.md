@@ -21,6 +21,7 @@ Open the extension sidebar in Visual Studio Code and click on the three dots in 
 3. Click on `Clean current selection` to remove the command from the selected text. You can also wrap the selected text in the LaTeX command by clicking on `Wrap current selection`.
 The command `Toggle current selection` will remove the command if it is present in the selection and wrap the selection if it is not.
 With `Replace macros in selection` you can replace all macros (that are defined in `cleantex.macroPaths`) in the selection with their respective definitions.
+**Important:** The extension currently expects that curly braces are used when calling the macros. For example, `\macro{arg}` will be replaced, but `\macro arg` will lead to issues.
 
 ### Usage in the file explorer
 
@@ -28,6 +29,7 @@ With `Replace macros in selection` you can replace all macros (that are defined 
 2. Right-click and hover over the `CleanTeX` submenu in the context menu.
 3. Click on `Clean selected files` to remove the command from the selected files.
 The command `Replace macros in files` will replace all macros (that are defined in `cleantex.macroPaths`) in the selected files with their respective definitions.
+**Important:** The extension currently expects that curly braces are used when calling the macros. For example, `\macro{arg}` will be replaced, but `\macro arg` will lead to issues.
 
 ### Usage with commands
 

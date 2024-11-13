@@ -2,7 +2,7 @@
 import * as vscode from 'vscode';
 
 // Import the cleanString function from the clean module
-import { cleanString, scanMacros } from './clean';
+import { cleanString, scanMacros, replaceMacros } from './clean';
 
 // This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -171,7 +171,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 
 		// get the macros from the file using the scanMacros function
-		const macros: { [key: string]: [string, number] } = {};
+		const macros: { [key: string]: [string, number, string | null] } = {};
 		macroPaths.forEach(async (path) => {
 			let uri = vscode.Uri.file(path);
 			try {
@@ -179,6 +179,7 @@ export function activate(context: vscode.ExtensionContext) {
 				Object.assign(macros, scanMacros(document.getText()));
 			}
 			catch (error) {
+				console.error(error);
 				vscode.window.showErrorMessage(`Error reading file at ${path}.`);
 			}
 		});
@@ -201,62 +202,10 @@ export function activate(context: vscode.ExtensionContext) {
 			// replace the macros in the document
 			let output = document.getText();
 			let counter = 0;
-			for (let [key, value] of Object.entries(macros)) {
-				let macroDefinition = value[0];
-				let macroArguments = value[1];
-				let regex = new RegExp(`(?<!\\\\newcommand{)\\${key}`, 'g');
-				let matches = output.matchAll(regex);
-				// replace in reverse order to avoid changing the indices of the matches
-				let matchesArray = Array.from(matches);
-				for (let i = matchesArray.length - 1; i >= 0; i--) {
-					let match = matchesArray[i];
-					let start = match.index;
-					let text = macroDefinition;
-					if (start === undefined) {
-						continue;
-					}
-					let j = start + match[0].length;
-					if (macroArguments > 0) {
-						let currentArgument = 0;
-						let currentArgumentString = '';
-						let argumentArray = [];
-						while (output[j] !== '{') {
-							j++;
-						}
-						j++;
-						let openBraces = 1;
-						while (j < output.length) {
-							if (output[j] === '{') {
-								openBraces++;
-							} else if (output[j] === '}') {
-								openBraces--;
-							}
-							if (openBraces === 0 && output[j] === '}') {
-								currentArgument++;
-								argumentArray.push(currentArgumentString);
-								if (currentArgument === macroArguments) {
-									j++;
-									break;
-								}
-								else {
-									currentArgumentString = '';
-									while (output[j] !== '{') {
-										j++;
-									}
-									openBraces = 1;
-									j++;
-								}
-							}
-							currentArgumentString += output[j];
-							j++;
-						}
-						for (let i = 0; i < argumentArray.length; i++) {
-							text = text.replace(`#${i + 1}`, argumentArray[i]);
-						}
-					}
-					output = output.substring(0, start) + text + output.substring(j);
-				}
-				counter += matchesArray.length;
+			for (let [name, [definition, args, optionalArgument]] of Object.entries(macros)) {
+				let count = 0;
+				[output, count] = replaceMacros(output, name, definition, args, optionalArgument);
+				counter += count;
 			}
 			await vscode.workspace.fs.writeFile(uri, Buffer.from(output));
 			return counter;
@@ -290,73 +239,27 @@ export function activate(context: vscode.ExtensionContext) {
 				}
 
 				// get the macros from the file using the scanMacros function
-				const macros: { [key: string]: [string, number] } = {};
-				for (let path of macroPaths) {
+				const macros: { [key: string]: [string, number, string | null] } = {};
+				macroPaths.forEach(async (path) => {
 					let uri = vscode.Uri.file(path);
-					let document = await vscode.workspace.openTextDocument(uri);
-					Object.assign(macros, scanMacros(document.getText()));
-				}
+					try {
+						let document = await vscode.workspace.openTextDocument(uri);
+						Object.assign(macros, scanMacros(document.getText()));
+					}
+					catch (error) {
+						console.error(error);
+						vscode.window.showErrorMessage(`Error reading file at ${path}.`);
+					}
+				});
 		
 				// replace the macros in the selection
 				let selection = editor.selection;
 				let output = editor.document.getText(selection);
 				let counter = 0;
-				for (let [key, value] of Object.entries(macros)) {
-					let macroDefinition = value[0];
-					let macroArguments = value[1];
-					let regex = new RegExp(`(?<!\\\\newcommand{)\\${key}`, 'g');
-					let matches = output.matchAll(regex);
-					// replace in reverse order to avoid changing the indices of the matches
-					let matchesArray = Array.from(matches);
-					for (let i = matchesArray.length - 1; i >= 0; i--) {
-						let match = matchesArray[i];
-						let start = match.index;
-						let text = macroDefinition;
-						if (start === undefined) {
-							continue;
-						}
-						let j = start + match[0].length;
-						if (macroArguments > 0) {
-							let currentArgument = 0;
-							let currentArgumentString = '';
-							let argumentArray = [];
-							while (output[j] !== '{') {
-								j++;
-							}
-							j++;
-							let openBraces = 1;
-							while (j < output.length) {
-								if (output[j] === '{') {
-									openBraces++;
-								} else if (output[j] === '}') {
-									openBraces--;
-								}
-								if (openBraces === 0 && output[j] === '}') {
-									currentArgument++;
-									argumentArray.push(currentArgumentString);
-									if (currentArgument === macroArguments) {
-										j++;
-										break;
-									}
-									else {
-										currentArgumentString = '';
-										while (output[j] !== '{') {
-											j++;
-										}
-										openBraces = 1;
-										j++;
-									}
-								}
-								currentArgumentString += output[j];
-								j++;
-							}
-							for (let i = 0; i < argumentArray.length; i++) {
-								text = text.replace(`#${i + 1}`, argumentArray[i]);
-							}
-						}
-						output = output.substring(0, start) + text + output.substring(j);
-					}
-					counter += matchesArray.length;
+				for (let [name, [definition, args, optionalArgument]] of Object.entries(macros)) {
+					let count = 0;
+					[output, count] = replaceMacros(output, name, definition, args, optionalArgument);
+					counter += count;
 				}
 		
 				// replace the text in the editor
