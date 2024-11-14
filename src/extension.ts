@@ -7,6 +7,10 @@ import { cleanString, scanMacros, replaceMacros } from './clean';
 // Create an output channel for the extension
 const logger = vscode.window.createOutputChannel('CleanTeX', {log: true});
 
+// Create a diagnostic collection for the extension
+const diagnosticCollection = vscode.languages.createDiagnosticCollection("CleanTeX");
+const diagnostics : vscode.Diagnostic[] = [];
+
 // This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
 
@@ -165,6 +169,9 @@ export function activate(context: vscode.ExtensionContext) {
 	});
 
 	let replaceMacrosFiles = vscode.commands.registerCommand('cleantex.replaceMacrosInFiles', async (_contextSelection: vscode.Uri, allSelections: vscode.Uri[]) => {
+		// clear the diagnostics
+		diagnosticCollection.clear();
+
 		// get the paths to the files containing the macros
 		const macroPaths = vscode.workspace.getConfiguration('cleantex').get<string[]>('macroPaths');
 
@@ -214,6 +221,23 @@ export function activate(context: vscode.ExtensionContext) {
 				[output, count] = replaceMacros(output, name, definition, args, optionalArgument);
 				counter += count;
 			}
+			// add error to all non replaced macros
+			for (let [name, [,]] of Object.entries(macros)) {
+				let regex = new RegExp(`(?<!\\\\newcommand{)\\\\${name}`, 'g');
+				let matches = output.matchAll(regex);
+				for (let match of matches) {
+					let position = match.index;
+					if (position === undefined) {
+						continue;
+					}
+					let line = document.positionAt(position).line;
+					let column = position - document.offsetAt(new vscode.Position(line, 0));
+					logger.error(`Could not replace macro \\${name} at ${line}:${column}`);
+					diagnostics.push(new vscode.Diagnostic(new vscode.Range(line, column, line, column + name.length + 1), `Could not replace macro \\${name}`, vscode.DiagnosticSeverity.Error));
+				}
+			}
+			diagnosticCollection.set(uri, diagnostics);
+
 			await vscode.workspace.fs.writeFile(uri, Buffer.from(output));
 			return counter;
 		});

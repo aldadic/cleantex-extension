@@ -1,6 +1,7 @@
 // Function that removes the command and its arguments from the input string
 // and returns the cleaned string and the number of commands found.
 
+import { error } from "console";
 import { LogOutputChannel } from "vscode";
 
 export function cleanString(input: string, command: string, remove: boolean = false): [string, number] {
@@ -148,64 +149,73 @@ export function replaceMacros(input: string, name: string, definition: string, a
 	let matches = input.matchAll(regex);
 	// replace in reverse order to avoid changing the indices of the matches
 	let matchesArray = Array.from(matches);
+	let counter = 0;
 	for (let i = matchesArray.length - 1; i >= 0; i--) {
-		let match = matchesArray[i];
-		let start = match.index;
-		let text = definition;
-		if (start === undefined) {
-			continue;
-		}
-		let j = start + match[0].length;
-		if (args > 0) {
-			let currentArgument = 0;
-			let currentArgumentString = '';
-			let argumentArray = [];
-			while (input[j] !== '{' && input[j] !== '[') {
-				j++;
+		try {
+			let match = matchesArray[i];
+			let start = match.index;
+			let text = definition;
+			if (start === undefined) {
+				throw new Error('Error: match.index is undefined');
 			}
-			if (optionalArgument !== null) {
-				if (input[j] === '[') {
-					j++;
-					let optionalArgument = '';
-					while (input[j] !== ']') {
-						optionalArgument += input[j];
-						j++;
-					}
+			let j = start + match[0].length;
+			if (args > 0) {
+				let currentArgument = 0;
+				let currentArgumentString = '';
+				let argumentArray = [];
+				if (input[j] !== '{' && input[j] !== '[') {
+					throw new Error("Error: Expected '{' or '[' after macro name");
 				}
-				currentArgument++;
-				argumentArray.push(optionalArgument);
-			}
-			j++;
-			let openBraces = 1;
-			while (j < input.length) {
-				if (input[j] === '{') {
-					openBraces++;
-				} else if (input[j] === '}') {
-					openBraces--;
-				}
-				if (openBraces === 0 && input[j] === '}') {
-					currentArgument++;
-					argumentArray.push(currentArgumentString);
-					if (currentArgument === args) {
+				if (optionalArgument !== null) {
+					if (input[j] === '[') {
 						j++;
-						break;
-					} else {
-						currentArgumentString = '';
-						while (input[j] !== '{') {
+						let optionalArgument = '';
+						while (input[j] !== ']') {
+							optionalArgument += input[j];
 							j++;
 						}
-						openBraces = 1;
-						j++;
 					}
+					currentArgument++;
+					argumentArray.push(optionalArgument);
 				}
-				currentArgumentString += input[j];
 				j++;
+				let openBraces = 1;
+				while (j < input.length) {
+					if (input[j] === '{') {
+						openBraces++;
+					} else if (input[j] === '}') {
+						openBraces--;
+					}
+					if (openBraces === 0 && input[j] === '}') {
+						currentArgument++;
+						argumentArray.push(currentArgumentString);
+						if (currentArgument === args) {
+							j++;
+							break;
+						} else {
+							currentArgumentString = '';
+							j++;
+							if (input[j] !== '{') {
+								throw new Error('Not enough arguments. Expected "{".');
+							}
+							j++;
+							openBraces = 1;
+						}
+					}
+					currentArgumentString += input[j];
+					j++;
+				}
+				for (let i = 0; i < argumentArray.length; i++) {
+					text = text.replace(`#${i + 1}`, argumentArray[i]);
+				}
 			}
-			for (let i = 0; i < argumentArray.length; i++) {
-				text = text.replace(`#${i + 1}`, argumentArray[i]);
-			}
+			input = input.substring(0, start) + text + input.substring(j);
+			counter++;
 		}
-		input = input.substring(0, start) + text + input.substring(j);
+		catch (e) {
+			console.error(e);
+			continue;
+		}
 	}
-	return [input, matchesArray.length];
+	return [input, counter];
 }
