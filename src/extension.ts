@@ -4,6 +4,9 @@ import * as vscode from 'vscode';
 // Import the cleanString function from the clean module
 import { cleanString, scanMacros, replaceMacros } from './clean';
 
+// Create an output channel for the extension
+const logger = vscode.window.createOutputChannel('CleanTeX', {log: true});
+
 // This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
 
@@ -176,7 +179,11 @@ export function activate(context: vscode.ExtensionContext) {
 			let uri = vscode.Uri.file(path);
 			try {
 				let document = await vscode.workspace.openTextDocument(uri);
-				Object.assign(macros, scanMacros(document.getText()));
+				let scanned = scanMacros(document.getText(), logger);
+				Object.assign(macros, scanned.macros);
+				if (scanned.errors > 0) {
+					vscode.window.showWarningMessage(`Found ${scanned.errors} errors while scanning macros in file at ${path}. Check the output channel for more information.`);
+				}
 			}
 			catch (error) {
 				console.error(error);
@@ -244,7 +251,11 @@ export function activate(context: vscode.ExtensionContext) {
 					let uri = vscode.Uri.file(path);
 					try {
 						let document = await vscode.workspace.openTextDocument(uri);
-						Object.assign(macros, scanMacros(document.getText()));
+						let scanned = scanMacros(document.getText(), logger);
+						Object.assign(macros, scanned.macros);
+						if (scanned.errors > 0) {
+							vscode.window.showWarningMessage(`Found ${scanned.errors} errors while scanning macros in file at ${path}. Check the output channel for more information.`);
+						}
 					}
 					catch (error) {
 						console.error(error);

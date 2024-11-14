@@ -1,7 +1,7 @@
 // Function that removes the command and its arguments from the input string
 // and returns the cleaned string and the number of commands found.
 
-import { parse } from "path";
+import { LogOutputChannel } from "vscode";
 
 export function cleanString(input: string, command: string, remove: boolean = false): [string, number] {
 	let counter = 0;	// Counter for the number of commands found
@@ -56,64 +56,95 @@ export function cleanString(input: string, command: string, remove: boolean = fa
 // Function that scans the input string for macros and returns an object with the
 // macro names and their definitions.
 
-export function scanMacros(input: string): { [key: string]: [string, number, string | null] } {
+export function scanMacros(input: string, logger: LogOutputChannel): { macros: { [key: string]: [string, number, string | null] }, errors: number } {
 	const macros: { [key: string]: [string, number, string | null] } = {};
-	const command = '\\newcommand{';
+	const command = '\\newcommand';
 	const commandLength = command.length;
 
-	for (let i = 0; i < input.length; i++) {
+	let i = 0;
+	let line_number = 1;
+	let line_i = 0;
+	let errors = 0;
+
+	let step = () => {
+		i++;
+		if (input[i] === '\n') {
+			line_number++;
+			line_i = i;
+		}
+	};
+
+	while(i < input.length) {
 		if (input.substring(i, i + commandLength) === command) {
-			let j = i + commandLength;
+			i += commandLength;
+			if (input[i] !== '{') {
+				logger.error(`Expected "{" after \\newcommand at ${line_number}:${i - line_i}`);
+				errors++;
+				continue;
+			}
+			step();
 			let macroName = '';
 			let macroArguments = 0;
 			let optionalArgument = null;
-			while (input[j] !== '}') {
-				macroName += input[j];
-				j++;
+			if (input[i] !== '\\') {
+				logger.error(`Expected "\\" after "\\newcommand{" at ${line_number}:${i - line_i}`);
+				errors++;
+				continue;
 			}
-			j++;
-			if (input[j] === '[') {
+			step();
+			while (input[i] !== '}') {
+				macroName += input[i];
+				step();
+			}
+			step();
+			if (input[i] === '[') {
 				let macroArgumentsString = '';
-				j++;
-				while (input[j] !== ']') {
-					macroArgumentsString += input[j];
-					j++;
+				step();
+				while (input[i] !== ']') {
+					macroArgumentsString += input[i];
+					step();
 				}
 				macroArguments = parseInt(macroArgumentsString);
-				j++;
+				step();
 			}
-			if (input[j] === '[') {
-				j++;
+			if (input[i] === '[') {
+				step();
 				optionalArgument = '';
-				while (input[j] !== ']') {
-					optionalArgument += input[j];
-					j++;
+				while (input[i] !== ']') {
+					optionalArgument += input[i];
+					step();
 				}
-				j++;
+				step();
 			}
-			j++;
+			if (input[i] !== '{') {
+				logger.error(`Expected "{" after macro arguments at ${line_number}:${i - line_i}`);
+				errors++;
+				continue;
+			}
+			step();
 			let openBraces = 1;
 			let macroDefinition = '';
 			while (openBraces > 0) {
-				if (input[j] === '{') {
+				if (input[i] === '{') {
 					openBraces++;
-				} else if (input[j] === '}') {
+				} else if (input[i] === '}') {
 					openBraces--;
 				}
-				macroDefinition += input[j];
-				j++;
+				macroDefinition += input[i];
+				step();
 			}
-			macroDefinition = macroDefinition.substring(0, macroDefinition.length - 1);
+			macroDefinition = macroDefinition.substring(0, macroDefinition.length-1);
 			macros[macroName] = [macroDefinition, macroArguments, optionalArgument];
 		}
+		step();
 	}
-
-	return macros;
+	
+	return { macros, errors };
 }
 
 // Function that replaces the macros in the input string with their definitions.
 export function replaceMacros(input: string, name: string, definition: string, args: number, optionalArgument: string | null): [string, number] {
-	let regex = new RegExp(`(?<!\\\\newcommand{)\\${name}`, 'g');
+	let regex = new RegExp(`(?<!\\\\newcommand{)\\\\${name}`, 'g');
 	let matches = input.matchAll(regex);
 	// replace in reverse order to avoid changing the indices of the matches
 	let matchesArray = Array.from(matches);
