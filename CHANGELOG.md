@@ -2,6 +2,10 @@
 
 All notable changes to the "CleanTeX" extension will be documented in this file.
 
+## [1.3.3] - 2024-11-15
+
+- Added diagnostics for macro replacement.
+
 ## [1.3.2] - 2024-11-13
 
 - The replacement of macros now also works with optional arguments.
