@@ -4,8 +4,8 @@ import * as vscode from 'vscode';
 // Import the cleanString function from the clean module
 import { cleanString, scanMacros, replaceMacros } from './clean';
 
-// Create a diagnostic collection for the extension
-const diagnosticCollection = vscode.languages.createDiagnosticCollection("CleanTeX");
+// Create a diagnostic collection for for macro files and for files containing macros
+const diagnosticCollectionMacros = vscode.languages.createDiagnosticCollection("cleantex-macro");
 
 // This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -166,7 +166,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	let replaceMacrosFiles = vscode.commands.registerCommand('cleantex.replaceMacrosInFiles', async (_contextSelection: vscode.Uri, allSelections: vscode.Uri[]) => {
 		// clear the diagnostics
-		diagnosticCollection.clear();
+		diagnosticCollectionMacros.clear();
 
 		// get the paths to the files containing the macros
 		const macroPaths = vscode.workspace.getConfiguration('cleantex').get<string[]>('macroPaths');
@@ -178,13 +178,11 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// get the macros from the file using the scanMacros function
 		const macros: { [key: string]: [string, number, string | null] } = {};
-		let existingMacroPaths: string[] = [];
 		macroPaths.forEach(async (path) => {
 			let uri = vscode.Uri.file(path);
 			try {
 				let document = await vscode.workspace.openTextDocument(uri);
 				Object.assign(macros, scanMacros(document.getText()));
-				existingMacroPaths.push(path);
 			}
 			catch (error) {
 				console.error(error);
@@ -230,7 +228,7 @@ export function activate(context: vscode.ExtensionContext) {
 					diagnostics.push(new vscode.Diagnostic(new vscode.Range(line, column, line, column + name.length + 1), `Could not replace macro \\${name}`, vscode.DiagnosticSeverity.Error));
 				}
 			}
-			diagnosticCollection.set(uri, diagnostics);
+			diagnosticCollectionMacros.set(uri, diagnostics);
 
 			await vscode.workspace.fs.writeFile(uri, Buffer.from(output));
 			return counter;
@@ -246,70 +244,12 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage(message);
 	});
 
-
-	let replaceMacrosSelection = vscode.commands.registerCommand('cleantex.replaceMacrosInSelection', async () => {
-		let editor = vscode.window.activeTextEditor;
-		if (editor) {
-			if (editor.selection.isEmpty) {
-				vscode.window.showErrorMessage('No text selected.');
-				return;
-			}
-			else {
-				// get the paths to the files containing the macros
-				const macroPaths = vscode.workspace.getConfiguration('cleantex').get<string[]>('macroPaths');
-
-				if (!macroPaths) {
-					vscode.window.showErrorMessage('No macro file paths set.');
-					return;
-				}
-
-				// get the macros from the file using the scanMacros function
-				const macros: { [key: string]: [string, number, string | null] } = {};
-				macroPaths.forEach(async (path) => {
-					let uri = vscode.Uri.file(path);
-					try {
-						let document = await vscode.workspace.openTextDocument(uri);
-						Object.assign(macros, scanMacros(document.getText()));
-					}
-					catch (error) {
-						console.error(error);
-						vscode.window.showErrorMessage(`Error reading macro file at ${path}.`);
-					}
-				});
-		
-				// replace the macros in the selection
-				let selection = editor.selection;
-				let output = editor.document.getText(selection);
-				let counter = 0;
-				for (let [name, [definition, args, optionalArgument]] of Object.entries(macros)) {
-					let count = 0;
-					[output, count] = replaceMacros(output, name, definition, args, optionalArgument);
-					counter += count;
-				}
-		
-				// replace the text in the editor
-				editor.edit(editBuilder => {
-					editBuilder.replace(selection, output);
-				});
-		
-				// show a message to the user
-				let macroText = counter === 1 ? 'macro' : 'macros';
-				let message = counter === 0 ? `No macros found in selection.` : `Replaced ${counter} ${macroText}.`;
-				vscode.window.showInformationMessage(message);
-			}
-		}
-		else {
-			vscode.window.showErrorMessage('No active editor found.');
-		}
-	});
-
 	// Add the commands to the context
 	context.subscriptions.push(cleanFiles);
 	context.subscriptions.push(cleanSelection);
 	context.subscriptions.push(wrapSelection);
 	context.subscriptions.push(toggleSelection);
 	context.subscriptions.push(replaceMacrosFiles);
-	context.subscriptions.push(replaceMacrosSelection);
 }
 
 // This method is called when the extension is deactivated

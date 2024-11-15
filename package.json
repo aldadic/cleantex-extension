@@ -40,11 +40,6 @@
         "title": "Clean selected files"
       },
       {
-        "command": "cleantex.replaceMacrosInSelection",
-        "category": "CleanTeX",
-        "title": "Replace macros in selection"
-      },
-      {
         "command": "cleantex.replaceMacrosInFiles",
         "category": "CleanTeX",
         "title": "Replace macros in selected files"
@@ -67,9 +62,6 @@
         },
         {
           "command": "cleantex.toggleSelection"
-        },
-        {
-          "command": "cleantex.replaceMacrosInSelection"
         }
       ],
       "explorer/context": [
