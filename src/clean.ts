@@ -1,9 +1,6 @@
 // Function that removes the command and its arguments from the input string
 // and returns the cleaned string and the number of commands found.
 
-import { error } from "console";
-import { LogOutputChannel } from "vscode";
-
 export function cleanString(input: string, command: string, remove: boolean = false): [string, number] {
 	let counter = 0;	// Counter for the number of commands found
 
@@ -57,90 +54,79 @@ export function cleanString(input: string, command: string, remove: boolean = fa
 // Function that scans the input string for macros and returns an object with the
 // macro names and their definitions.
 
-export function scanMacros(input: string, logger: LogOutputChannel): { macros: { [key: string]: [string, number, string | null] }, errors: number } {
+export function scanMacros(input: string): { [key: string]: [string, number, string | null] } {
 	const macros: { [key: string]: [string, number, string | null] } = {};
 	const command = '\\newcommand';
 	const commandLength = command.length;
 
 	let i = 0;
-	let line_number = 1;
-	let line_i = 0;
-	let errors = 0;
-
-	let step = () => {
-		i++;
-		if (input[i] === '\n') {
-			line_number++;
-			line_i = i;
-		}
-	};
 
 	while(i < input.length) {
-		if (input.substring(i, i + commandLength) === command) {
-			i += commandLength;
-			if (input[i] !== '{') {
-				logger.error(`Expected "{" after \\newcommand at ${line_number}:${i - line_i}`);
-				errors++;
-				continue;
-			}
-			step();
-			let macroName = '';
-			let macroArguments = 0;
-			let optionalArgument = null;
-			if (input[i] !== '\\') {
-				logger.error(`Expected "\\" after "\\newcommand{" at ${line_number}:${i - line_i}`);
-				errors++;
-				continue;
-			}
-			step();
-			while (input[i] !== '}') {
-				macroName += input[i];
-				step();
-			}
-			step();
-			if (input[i] === '[') {
-				let macroArgumentsString = '';
-				step();
-				while (input[i] !== ']') {
-					macroArgumentsString += input[i];
-					step();
+		try {
+			if (input.substring(i, i + commandLength) === command) {
+				i += commandLength;
+				if (input[i] !== '{') {
+					throw new Error(`Expected "{" after \\newcommand`);
 				}
-				macroArguments = parseInt(macroArgumentsString);
-				step();
-			}
-			if (input[i] === '[') {
-				step();
-				optionalArgument = '';
-				while (input[i] !== ']') {
-					optionalArgument += input[i];
-					step();
+				i++;
+				let macroName = '';
+				let macroArguments = 0;
+				let optionalArgument = null;
+				if (input[i] !== '\\') {
+					throw new Error(`Expected "\\" after "\\newcommand{"`);
 				}
-				step();
-			}
-			if (input[i] !== '{') {
-				logger.error(`Expected "{" after macro arguments at ${line_number}:${i - line_i}`);
-				errors++;
-				continue;
-			}
-			step();
-			let openBraces = 1;
-			let macroDefinition = '';
-			while (openBraces > 0) {
-				if (input[i] === '{') {
-					openBraces++;
-				} else if (input[i] === '}') {
-					openBraces--;
+				i++;
+				while (input[i] !== '}') {
+					macroName += input[i];
+					i++;
 				}
-				macroDefinition += input[i];
-				step();
+				i++;
+				if (input[i] === '[') {
+					let macroArgumentsString = '';
+					i++;
+					while (input[i] !== ']') {
+						macroArgumentsString += input[i];
+						i++;
+					}
+					macroArguments = parseInt(macroArgumentsString);
+					i++;
+				}
+				if (input[i] === '[') {
+					i++;
+					optionalArgument = '';
+					while (input[i] !== ']') {
+						optionalArgument += input[i];
+						i++;
+					}
+					i++;
+				}
+				if (input[i] !== '{') {
+					throw new Error(`Expected "{" after macro arguments`);
+				}
+				i++;
+				let openBraces = 1;
+				let macroDefinition = '';
+				while (openBraces > 0) {
+					if (input[i] === '{') {
+						openBraces++;
+					} else if (input[i] === '}') {
+						openBraces--;
+					}
+					macroDefinition += input[i];
+					i++;
+				}
+				macroDefinition = macroDefinition.substring(0, macroDefinition.length-1);
+				macros[macroName] = [macroDefinition, macroArguments, optionalArgument];
 			}
-			macroDefinition = macroDefinition.substring(0, macroDefinition.length-1);
-			macros[macroName] = [macroDefinition, macroArguments, optionalArgument];
+			i++;
 		}
-		step();
+		catch (e) {
+			console.error(e);
+			continue;
+		}
 	}
-	
-	return { macros, errors };
+
+	return macros ;
 }
 
 // Function that replaces the macros in the input string with their definitions.

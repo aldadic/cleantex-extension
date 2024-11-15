@@ -4,12 +4,8 @@ import * as vscode from 'vscode';
 // Import the cleanString function from the clean module
 import { cleanString, scanMacros, replaceMacros } from './clean';
 
-// Create an output channel for the extension
-const logger = vscode.window.createOutputChannel('CleanTeX', {log: true});
-
 // Create a diagnostic collection for the extension
 const diagnosticCollection = vscode.languages.createDiagnosticCollection("CleanTeX");
-const diagnostics : vscode.Diagnostic[] = [];
 
 // This method is called when the extension is activated
 export function activate(context: vscode.ExtensionContext) {
@@ -182,19 +178,17 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// get the macros from the file using the scanMacros function
 		const macros: { [key: string]: [string, number, string | null] } = {};
+		let existingMacroPaths: string[] = [];
 		macroPaths.forEach(async (path) => {
 			let uri = vscode.Uri.file(path);
 			try {
 				let document = await vscode.workspace.openTextDocument(uri);
-				let scanned = scanMacros(document.getText(), logger);
-				Object.assign(macros, scanned.macros);
-				if (scanned.errors > 0) {
-					vscode.window.showWarningMessage(`Found ${scanned.errors} errors while scanning macros in file at ${path}. Check the output channel for more information.`);
-				}
+				Object.assign(macros, scanMacros(document.getText()));
+				existingMacroPaths.push(path);
 			}
 			catch (error) {
 				console.error(error);
-				vscode.window.showErrorMessage(`Error reading file at ${path}.`);
+				vscode.window.showErrorMessage(`Error reading macro file at ${path}.`);
 			}
 		});
 
@@ -203,6 +197,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// get the selected files
 		let files = allSelections.map(async (uri) => {
+			let diagnostics: vscode.Diagnostic[] = [];
 			let document = await vscode.workspace.openTextDocument(uri);
 			// if document is not a LaTeX file, skip cleaning and return 0
 			if (document.languageId !== 'latex') {
@@ -223,7 +218,7 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			// add error to all non replaced macros
 			for (let [name, [,]] of Object.entries(macros)) {
-				let regex = new RegExp(`(?<!\\\\newcommand{)\\\\${name}`, 'g');
+				let regex = new RegExp(`(?<!\\\\newcommand{)\\\\${name}[{\\s]`, 'g');
 				let matches = output.matchAll(regex);
 				for (let match of matches) {
 					let position = match.index;
@@ -232,7 +227,6 @@ export function activate(context: vscode.ExtensionContext) {
 					}
 					let line = document.positionAt(position).line;
 					let column = position - document.offsetAt(new vscode.Position(line, 0));
-					logger.error(`Could not replace macro \\${name} at ${line}:${column}`);
 					diagnostics.push(new vscode.Diagnostic(new vscode.Range(line, column, line, column + name.length + 1), `Could not replace macro \\${name}`, vscode.DiagnosticSeverity.Error));
 				}
 			}
@@ -275,15 +269,11 @@ export function activate(context: vscode.ExtensionContext) {
 					let uri = vscode.Uri.file(path);
 					try {
 						let document = await vscode.workspace.openTextDocument(uri);
-						let scanned = scanMacros(document.getText(), logger);
-						Object.assign(macros, scanned.macros);
-						if (scanned.errors > 0) {
-							vscode.window.showWarningMessage(`Found ${scanned.errors} errors while scanning macros in file at ${path}. Check the output channel for more information.`);
-						}
+						Object.assign(macros, scanMacros(document.getText()));
 					}
 					catch (error) {
 						console.error(error);
-						vscode.window.showErrorMessage(`Error reading file at ${path}.`);
+						vscode.window.showErrorMessage(`Error reading macro file at ${path}.`);
 					}
 				});
 		
